@@ -503,19 +503,31 @@
       try {
         const dados = localStorage.getItem('sorteio_cadastro_bruno');
         if (!dados) return false;
-        return dados === String(rodadaAtual);
+        const info = JSON.parse(dados);
+        if (info.rodada !== rodadaAtual) return false;
+        const agora = Date.now();
+        const umHora = 60 * 60 * 1000;
+        return (agora - info.timestamp) < umHora;
       } catch { return false; }
     }
 
     function marcarCadastro(rodada) {
-      try { localStorage.setItem('sorteio_cadastro_bruno', String(rodada)); } catch {}
+      try {
+        localStorage.setItem('sorteio_cadastro_bruno', JSON.stringify({ rodada, timestamp: Date.now() }));
+      } catch {}
     }
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
       if (jaSecadastrou()) {
-        mostrarMensagem('Você já se cadastrou neste sorteio.', 'erro');
+        try {
+          const info = JSON.parse(localStorage.getItem('sorteio_cadastro_bruno'));
+          const restante = Math.ceil((60 * 60 * 1000 - (Date.now() - info.timestamp)) / 60000);
+          mostrarMensagem(`Aguarde ${restante} minuto${restante > 1 ? 's' : ''} para se cadastrar novamente.`, 'erro');
+        } catch {
+          mostrarMensagem('Aguarde 1 hora para se cadastrar novamente.', 'erro');
+        }
         return;
       }
 
